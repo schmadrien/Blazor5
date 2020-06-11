@@ -1,0 +1,62 @@
+﻿@using System.Text.Json;
+@using System.Text.Json.Serialization;
+@page "/todo"
+@using Blazor5.Data
+@inject TodoService Doer
+
+
+<h3>Todo</h3>
+
+<ul>
+    @foreach (var todo in todos)
+    {
+        <li>
+            <input type="checkbox" @bind="todo.IsDone" @onclick="UpdateTodos"/>
+            <input @bind="todo.Title" />
+        </li>
+    }
+</ul>
+
+<input placeholder="Something todo" @bind="newTodo" />
+<button @onclick="AddTodo">Add todo</button>
+
+@code {
+    // Need to add something to this razor page that shows a warning about the json file if no list is loaded.
+    private IList<TodoItem> todos = new List<TodoItem>();
+    private string newTodo;
+
+    private async Task AddTodo()
+    {
+        if (!string.IsNullOrWhiteSpace(newTodo))
+        {
+            todos.Add(new TodoItem { Title = newTodo });
+
+            // Can't figure out how to overwrite existing file of todo items when list changes.
+
+            newTodo = string.Empty;
+
+            // this isn't saving if you click a checkbox on an existing item and then end the use of the component.
+            await UpdateTodos();
+            //await JsonSerializer.SerializeAsync<TodoItem[]>(new System.IO.FileStream("sample-data/todos.json"), todos.ToArray<TodoItem>());
+
+        }
+    }
+
+    private async Task UpdateTodos()
+    {
+        await Task.FromResult(Doer.UpdateTodosAsync(todos));
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var startups = await Doer.GetTodosAsync();
+            todos = startups.ToList<TodoItem>();
+        }
+        catch (JsonException E)
+        {
+            System.Console.WriteLine(E.Message);
+        }
+    }
+}
